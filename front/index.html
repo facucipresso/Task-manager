@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Listado TODO</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top-bar">
+    <h1 class="app-title">Gestor de tareas</h1>
+  </header>
+  <div class="app">
+    <aside class="sidebar">
+      <h2>Categorías</h2>
+      <button id="btn-add-category" class="btn btn-primary">+ Nueva Categoría</button>
+      <ul id="category-list" class="category-list"></ul>
+    </aside>
+
+    <main class="main-content">
+      <header class="main-header">
+        <h1 id="current-category-title">Selecciona una categoría</h1>
+        <button id="btn-add-task" class="btn btn-primary" style="display: none;">+ Nueva Tarea</button>
+      </header>
+
+      <div id="task-list" class="task-list"></div>
+    </main>
+  </div>
+
+  <!-- Modal Categoría -->
+  <div id="category-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h3 id="category-modal-title">Nueva Categoría</h3>
+      <form id="category-form">
+        <input type="hidden" id="category-id">
+        <div class="form-group">
+          <label for="category-name">Nombre</label>
+          <input type="text" id="category-name" required placeholder="Ej: Trabajo">
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-cancel" onclick="closeCategoryModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Tarea -->
+  <div id="task-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h3 id="task-modal-title">Nueva Tarea</h3>
+      <form id="task-form">
+        <input type="hidden" id="task-id">
+        <div class="form-group">
+          <label for="task-name">Nombre</label>
+          <input type="text" id="task-name" required placeholder="Ej: Reunión equipo">
+        </div>
+        <div class="form-group">
+          <label for="task-description">Descripción</label>
+          <textarea id="task-description" rows="3" placeholder="Detalles de la tarea..."></textarea>
+        </div>
+        <div class="form-group">
+          <label for="task-due-date">Fecha Límite</label>
+          <input type="date" id="task-due-date" required>
+        </div>
+        <div class="form-group">
+          <label for="task-priority">Prioridad</label>
+          <select id="task-priority" required>
+            <option value="low">Baja</option>
+            <option value="medium" selected>Media</option>
+            <option value="high">Alta</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-cancel" onclick="closeTaskModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
