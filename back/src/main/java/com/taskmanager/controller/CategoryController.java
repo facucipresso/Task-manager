@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/categories")
-@CrossOrigin(origins = "*")
+//@CrossOrigin(origins = "*")
 public class CategoryController {
 
     private final CategoryService categoryService;
@@ -42,6 +42,7 @@ public class CategoryController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
+        System.out.println("DELETE CATEGORY ID: " + id);
         categoryService.delete(id);
         return ResponseEntity.noContent().build();
     }

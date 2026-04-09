@@ -39,12 +39,14 @@ async function updateCategory(id, dto) {
   return res.json();
 }
 
+/*
 async function deleteCategory(id) {
   const res = await fetch(`${API_URL}/categories/${id}`, {
     method: 'DELETE',
   });
   if (!res.ok) throw new Error('Error al eliminar categoría');
 }
+  */
 
 async function createTask(dto) {
   const res = await fetch(`${API_URL}/tasks`, {
@@ -217,7 +219,7 @@ function openCategoryModal(id = null) {
   idInput.value = '';
 
   if (id) {
-    const cat = categories.find(c => c.id === id);
+    const cat = categories.find(c => c.id === Number(id));
     if (cat) {
       title.textContent = 'Editar Categoría';
       nameInput.value = cat.nombre;
@@ -340,29 +342,59 @@ function editCategory(id) {
   openCategoryModal(id);
 }
 
+
 async function deleteCategory(id) {
-  const cat = categories.find(c => c.id === id);
+  console.log("CLICK DELETE CATEGORY", id);
+
+  const cat = categories.find(c => String(c.id) === String(id));
   if (!cat) return;
 
-  const taskCount = tasks.filter(t => t.categoriaId === id).length;
-  const msg = taskCount > 0
-    ? `¿Eliminar "${cat.nombre}" y sus ${taskCount} tarea(s)?`
-    : `¿Eliminar "${cat.nombre}"?`;
-
-  if (!confirm(msg)) return;
+  if (!confirm(`¿Eliminar "${cat.nombre}"?`)) return;
 
   try {
-    await deleteCategory(id);
-    if (String(activeCategoryId) === String(id)) activeCategoryId = 'all';
-    await loadCategories();
-    await loadTasks();
+    const res = await fetch(`${API_URL}/categories/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!res.ok) throw new Error('Error al eliminar categoría');
+
+    // 🔥 eliminar del estado local
+    categories = categories.filter(c => String(c.id) !== String(id));
+
+    // 🔥 actualizar categoría activa
+    if (String(activeCategoryId) === String(id)) {
+      activeCategoryId = 'all';
+    }
+
+    // 🔥 actualizar UI
     renderCategories();
+    await loadTasks(); // por si cambió el contexto
     renderTasks();
+
   } catch (err) {
     alert(err.message);
   }
 }
+/*
+async function deleteCategory(id) {
+  console.log("CLICK DELETE CATEGORY", id);
 
+  try {
+    const res = await fetch(`${API_URL}/categories/${id}`, {
+      method: 'DELETE',
+    });
+
+    console.log("RESPONSE:", res);
+    if (String(activeCategoryId) === String(id)) {
+      activeCategoryId = 'all';
+    }
+
+  } catch (err) {
+    console.error("ERROR:", err);
+  }
+}
+
+*/
 async function handleToggleTask(id) {
   const task = tasks.find(t => String(t.id) === String(id));
   if (!task) return;
