@@ -5,6 +5,7 @@ import com.taskmanager.model.Category;
 import com.taskmanager.model.Task;
 import com.taskmanager.repository.CategoryRepository;
 import com.taskmanager.repository.TaskRepository;
+import com.taskmanager.security.SecurityUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,33 +17,39 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
     private final CategoryRepository categoryRepository;
+    private final SecurityUtils securityUtils;
 
-    public TaskService(TaskRepository taskRepository, CategoryRepository categoryRepository) {
+    public TaskService(TaskRepository taskRepository, CategoryRepository categoryRepository, SecurityUtils securityUtils) {
         this.taskRepository = taskRepository;
         this.categoryRepository = categoryRepository;
+        this.securityUtils = securityUtils;
     }
 
     public List<TaskDTO> findAll() {
-        return taskRepository.findAllOrderByFechaLimiteAndPriority().stream()
+        Long usuarioId = securityUtils.getCurrentUserId();
+        return taskRepository.findAllByUsuarioIdOrderByFechaLimiteAndPriority(usuarioId).stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
 
     public List<TaskDTO> findByCategoryId(Long categoryId) {
-        return taskRepository.findByCategoriaIdOrderByFechaLimiteAndPriority(categoryId).stream()
+        Long usuarioId = securityUtils.getCurrentUserId();
+        return taskRepository.findByCategoriaIdAndUsuarioIdOrderByFechaLimiteAndPriority(categoryId, usuarioId).stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
 
     public TaskDTO findById(Long id) {
-        Task task = taskRepository.findById(id)
+        Long usuarioId = securityUtils.getCurrentUserId();
+        Task task = taskRepository.findByIdAndUsuarioId(id, usuarioId)
                 .orElseThrow(() -> new RuntimeException("Task not found with id: " + id));
         return toDTO(task);
     }
 
     @Transactional
     public TaskDTO create(TaskDTO dto) {
-        Category category = categoryRepository.findById(dto.getCategoriaId())
+        Long usuarioId = securityUtils.getCurrentUserId();
+        Category category = categoryRepository.findByIdAndUsuarioId(dto.getCategoriaId(), usuarioId)
                 .orElseThrow(() -> new RuntimeException("Category not found with id: " + dto.getCategoriaId()));
 
         Task task = new Task();
@@ -59,7 +66,8 @@ public class TaskService {
 
     @Transactional
     public TaskDTO update(Long id, TaskDTO dto) {
-        Task task = taskRepository.findById(id)
+        Long usuarioId = securityUtils.getCurrentUserId();
+        Task task = taskRepository.findByIdAndUsuarioId(id, usuarioId)
                 .orElseThrow(() -> new RuntimeException("Task not found with id: " + id));
 
         task.setNombre(dto.getNombre());
@@ -69,7 +77,7 @@ public class TaskService {
         task.setPriority(dto.getPriority());
 
         if (dto.getCategoriaId() != null) {
-            Category category = categoryRepository.findById(dto.getCategoriaId())
+            Category category = categoryRepository.findByIdAndUsuarioId(dto.getCategoriaId(), usuarioId)
                     .orElseThrow(() -> new RuntimeException("Category not found with id: " + dto.getCategoriaId()));
             task.setCategoria(category);
         }
@@ -80,7 +88,8 @@ public class TaskService {
 
     @Transactional
     public void delete(Long id) {
-        if (!taskRepository.existsById(id)) {
+        Long usuarioId = securityUtils.getCurrentUserId();
+        if (!taskRepository.findByIdAndUsuarioId(id, usuarioId).isPresent()) {
             throw new RuntimeException("Task not found with id: " + id);
         }
         taskRepository.deleteById(id);

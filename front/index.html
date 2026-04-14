@@ -3,26 +3,76 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Listado TODO</title>
+  <title>Gestor de tareas</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="top-bar">
     <h1 class="app-title">Gestor de tareas</h1>
+    <div id="user-info" class="user-info" style="display: none;">
+      <span id="username-display"></span>
+      <button id="btn-logout" class="btn btn-logout">Cerrar sesión</button>
+    </div>
   </header>
-  <div class="app">
-    <aside class="sidebar">
+
+  <div class="app" id="app-container">
+    <!-- Login/Register forms shown when not authenticated -->
+    <div id="auth-section" class="auth-section">
+      <div class="auth-card">
+        <h2>Iniciar sesión</h2>
+        <form id="login-form">
+          <div class="form-group">
+            <label for="login-username">Usuario</label>
+            <input type="text" id="login-username" required placeholder="Tu usuario">
+          </div>
+          <div class="form-group">
+            <label for="login-password">Contraseña</label>
+            <div class="password-wrapper">
+              <input type="password" id="login-password" required placeholder="Tu contraseña">
+              <button type="button" class="toggle-password" onclick="togglePassword('login-password')">👁</button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full">Entrar</button>
+        </form>
+        <p class="auth-switch">¿No tenés cuenta? <a href="#" id="show-register">Registrate</a></p>
+      </div>
+
+      <div class="auth-card" id="register-card" style="display: none;">
+        <h2>Crear cuenta</h2>
+        <form id="register-form">
+          <div class="form-group">
+            <label for="register-username">Usuario</label>
+            <input type="text" id="register-username" required placeholder="Elegí un usuario">
+          </div>
+          <div class="form-group">
+            <label for="register-email">Email</label>
+            <input type="email" id="register-email" required placeholder="tu@email.com">
+          </div>
+          <div class="form-group">
+            <label for="register-password">Contraseña</label>
+            <div class="password-wrapper">
+              <input type="password" id="register-password" required placeholder="Mínimo 6 caracteres">
+              <button type="button" class="toggle-password" onclick="togglePassword('register-password')">👁</button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full">Crear cuenta</button>
+        </form>
+        <p class="auth-switch">¿Ya tenés cuenta? <a href="#" id="show-login">Iniciá sesión</a></p>
+      </div>
+    </div>
+
+    <!-- Main app shown when authenticated -->
+    <aside class="sidebar" id="sidebar" style="display: none;">
       <h2>Categorías</h2>
       <button id="btn-add-category" class="btn btn-primary">+ Nueva Categoría</button>
       <ul id="category-list" class="category-list"></ul>
     </aside>
 
-    <main class="main-content">
+    <main class="main-content" id="main-content" style="display: none;">
       <header class="main-header">
         <h1 id="current-category-title">Selecciona una categoría</h1>
         <button id="btn-add-task" class="btn btn-primary" style="display: none;">+ Nueva Tarea</button>
       </header>
-
       <div id="task-list" class="task-list"></div>
     </main>
   </div>

@@ -3,9 +3,112 @@ const API_URL = window.API_URL || 'http://localhost:8081/api';
 let categories = [];
 let tasks = [];
 let activeCategoryId = 'all';
+let currentUser = null;
 
+function getToken() {
+  return localStorage.getItem('token');
+}
+
+function setToken(token) {
+  localStorage.setItem('token', token);
+}
+
+function setUser(username) {
+  localStorage.setItem('username', username);
+  currentUser = username;
+}
+
+function getUser() {
+  return localStorage.getItem('username');
+}
+
+function clearAuth() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('username');
+  currentUser = null;
+}
+
+function isAuthenticated() {
+  return !!getToken();
+}
+
+async function apiFetch(url, options = {}) {
+  const token = getToken();
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    ...options.headers,
+  };
+
+  const res = await fetch(url, { ...options, headers });
+
+  if (res.status === 401) {
+    logout();
+    window.location.reload();
+    throw new Error('Sesión expirada');
+  }
+
+  return res;
+}
+
+async function login(username, password) {
+  const res = await apiFetch(`${API_URL}/auth/login`, {
+    method: 'POST',
+    body: JSON.stringify({ username, password }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err || 'Credenciales inválidas');
+  }
+
+  const data = await res.json();
+  setToken(data.token);
+  setUser(data.username);
+  return data;
+}
+
+async function register(username, email, password) {
+  const res = await apiFetch(`${API_URL}/auth/register`, {
+    method: 'POST',
+    body: JSON.stringify({ username, email, password }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err || 'Error al registrar');
+  }
+
+  const data = await res.json();
+  setToken(data.token);
+  setUser(data.username);
+  return data;
+}
+
+function logout() {
+  clearAuth();
+  showAuthSection();
+}
+
+// --- Auth UI ---
+function showAuthSection() {
+  document.getElementById('auth-section').style.display = 'flex';
+  document.getElementById('sidebar').style.display = 'none';
+  document.getElementById('main-content').style.display = 'none';
+  document.getElementById('user-info').style.display = 'none';
+}
+
+function showApp() {
+  document.getElementById('auth-section').style.display = 'none';
+  document.getElementById('sidebar').style.display = 'flex';
+  document.getElementById('main-content').style.display = 'flex';
+  document.getElementById('user-info').style.display = 'flex';
+  document.getElementById('username-display').textContent = getUser();
+}
+
+// --- API calls ---
 async function fetchCategories() {
-  const res = await fetch(`${API_URL}/categories`);
+  const res = await apiFetch(`${API_URL}/categories`);
   if (!res.ok) throw new Error('Error al cargar categorías');
   return res.json();
 }
@@ -14,74 +117,85 @@ async function fetchTasks(categoryId = null) {
   const url = categoryId && categoryId !== 'all'
     ? `${API_URL}/tasks?categoryId=${categoryId}`
     : `${API_URL}/tasks`;
-  const res = await fetch(url);
+  const res = await apiFetch(url);
   if (!res.ok) throw new Error('Error al cargar tareas');
   return res.json();
 }
 
 async function createCategory(dto) {
-  const res = await fetch(`${API_URL}/categories`, {
+  const res = await apiFetch(`${API_URL}/categories`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(dto),
   });
-  if (!res.ok) throw new Error('Error al crear categoría');
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
   return res.json();
 }
 
 async function updateCategory(id, dto) {
-  const res = await fetch(`${API_URL}/categories/${id}`, {
+  const res = await apiFetch(`${API_URL}/categories/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(dto),
   });
-  if (!res.ok) throw new Error('Error al actualizar categoría');
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
   return res.json();
 }
 
-/*
-async function deleteCategory(id) {
-  const res = await fetch(`${API_URL}/categories/${id}`, {
+async function deleteCategoryApi(id) {
+  const res = await apiFetch(`${API_URL}/categories/${id}`, {
     method: 'DELETE',
   });
-  if (!res.ok) throw new Error('Error al eliminar categoría');
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
 }
-  */
 
 async function createTask(dto) {
-  const res = await fetch(`${API_URL}/tasks`, {
+  const res = await apiFetch(`${API_URL}/tasks`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(dto),
   });
-  if (!res.ok) throw new Error('Error al crear tarea');
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
   return res.json();
 }
 
 async function updateTask(id, dto) {
-  const res = await fetch(`${API_URL}/tasks/${id}`, {
+  const res = await apiFetch(`${API_URL}/tasks/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(dto),
   });
-  if (!res.ok) throw new Error('Error al actualizar tarea');
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
   return res.json();
 }
 
-async function deleteTask(id) {
-  const res = await fetch(`${API_URL}/tasks/${id}`, {
+async function deleteTaskApi(id) {
+  const res = await apiFetch(`${API_URL}/tasks/${id}`, {
     method: 'DELETE',
   });
-  if (!res.ok) throw new Error('Error al eliminar tarea');
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
 }
 
 async function toggleTask(id, currentEstado) {
   const newEstado = currentEstado === 'done' ? 'pending' : 'done';
-  const task = tasks.find(t => t.id === id);
+  const task = tasks.find(t => String(t.id) === String(id));
   if (!task) return;
-  const res = await fetch(`${API_URL}/tasks/${id}`, {
+  const res = await apiFetch(`${API_URL}/tasks/${task.id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       nombre: task.nombre,
       descripcion: task.descripcion,
@@ -91,10 +205,14 @@ async function toggleTask(id, currentEstado) {
       categoriaId: task.categoriaId,
     }),
   });
-  if (!res.ok) throw new Error('Error al actualizar tarea');
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
   return res.json();
 }
 
+// --- State loading ---
 async function loadCategories() {
   try {
     categories = await fetchCategories();
@@ -117,6 +235,7 @@ async function loadTasks() {
   }
 }
 
+// --- Render ---
 function renderCategories() {
   const list = document.getElementById('category-list');
   list.innerHTML = '';
@@ -133,7 +252,7 @@ function renderCategories() {
       <span onclick="selectCategory('${cat.id}')">${escapeHtml(cat.nombre)}</span>
       <div class="category-actions">
         <button onclick="editCategory('${cat.id}')" title="Editar">✏️</button>
-        <button onclick="deleteCategory('${cat.id}')" title="Eliminar">🗑️</button>
+        <button onclick="handleDeleteCategory('${cat.id}')" title="Eliminar">🗑️</button>
       </div>
     `;
     list.appendChild(li);
@@ -201,6 +320,7 @@ function renderTasks() {
   });
 }
 
+// --- Actions ---
 async function selectCategory(id) {
   activeCategoryId = id === 'all' ? 'all' : Number(id);
   renderCategories();
@@ -274,10 +394,8 @@ function closeTaskModal() {
 
 async function saveCategory(e) {
   e.preventDefault();
-
   const id = document.getElementById('category-id').value;
   const nombre = document.getElementById('category-name').value.trim();
-
   if (!nombre) return;
 
   try {
@@ -296,7 +414,6 @@ async function saveCategory(e) {
 
 async function saveTask(e) {
   e.preventDefault();
-
   const id = document.getElementById('task-id').value;
   const nombre = document.getElementById('task-name').value.trim();
   const descripcion = document.getElementById('task-description').value.trim();
@@ -342,65 +459,31 @@ function editCategory(id) {
   openCategoryModal(id);
 }
 
-
-async function deleteCategory(id) {
-  console.log("CLICK DELETE CATEGORY", id);
-
+async function handleDeleteCategory(id) {
   const cat = categories.find(c => String(c.id) === String(id));
   if (!cat) return;
-
   if (!confirm(`¿Eliminar "${cat.nombre}"?`)) return;
 
   try {
-    const res = await fetch(`${API_URL}/categories/${id}`, {
-      method: 'DELETE',
-    });
-
-    if (!res.ok) throw new Error('Error al eliminar categoría');
-
-    // 🔥 eliminar del estado local
+    await deleteCategoryApi(id);
     categories = categories.filter(c => String(c.id) !== String(id));
-
-    // 🔥 actualizar categoría activa
     if (String(activeCategoryId) === String(id)) {
       activeCategoryId = 'all';
     }
-
-    // 🔥 actualizar UI
     renderCategories();
-    await loadTasks(); // por si cambió el contexto
+    await loadTasks();
     renderTasks();
-
   } catch (err) {
     alert(err.message);
   }
 }
-/*
-async function deleteCategory(id) {
-  console.log("CLICK DELETE CATEGORY", id);
 
-  try {
-    const res = await fetch(`${API_URL}/categories/${id}`, {
-      method: 'DELETE',
-    });
-
-    console.log("RESPONSE:", res);
-    if (String(activeCategoryId) === String(id)) {
-      activeCategoryId = 'all';
-    }
-
-  } catch (err) {
-    console.error("ERROR:", err);
-  }
-}
-
-*/
 async function handleToggleTask(id) {
   const task = tasks.find(t => String(t.id) === String(id));
   if (!task) return;
 
   try {
-    await toggleTask(task.id, task.estado);
+    await toggleTask(id, task.estado);
     await loadTasks();
     renderTasks();
   } catch (err) {
@@ -416,7 +499,7 @@ async function handleDeleteTask(id) {
   if (!confirm('¿Eliminar esta tarea?')) return;
 
   try {
-    await deleteTask(id);
+    await deleteTaskApi(id);
     await loadTasks();
     renderTasks();
   } catch (err) {
@@ -435,6 +518,19 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+function togglePassword(inputId) {
+  const input = document.getElementById(inputId);
+  const button = input.nextElementSibling;
+  if (input.type === 'password') {
+    input.type = 'text';
+    button.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    button.textContent = '👁';
+  }
+}
+
+// --- Event listeners ---
 document.getElementById('btn-add-category').addEventListener('click', () => openCategoryModal());
 document.getElementById('btn-add-task').addEventListener('click', () => openTaskModal());
 document.getElementById('category-form').addEventListener('submit', saveCategory);
@@ -448,11 +544,65 @@ document.querySelectorAll('.modal').forEach(modal => {
   });
 });
 
-async function init() {
-  await loadCategories();
-  await loadTasks();
-  renderCategories();
-  renderTasks();
+document.querySelectorAll('.modal').forEach(modal => {
+  modal.addEventListener('click', e => {
+    if (e.target === modal) modal.style.display = 'none';
+  });
+});
+
+// --- Auth form handling ---
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+
+  try {
+    await login(username, password);
+    await initApp();
+  } catch (err) {
+    alert(err.message);
+  }
+});
+
+document.getElementById('register-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const username = document.getElementById('register-username').value.trim();
+  const email = document.getElementById('register-email').value.trim();
+  const password = document.getElementById('register-password').value;
+
+  try {
+    await register(username, email, password);
+    await initApp();
+  } catch (err) {
+    alert(err.message);
+  }
+});
+
+document.getElementById('show-register').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('login-form').parentElement.style.display = 'none';
+  document.getElementById('register-card').style.display = 'block';
+});
+
+document.getElementById('show-login').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('register-card').style.display = 'none';
+  document.getElementById('login-form').parentElement.style.display = 'block';
+});
+
+document.getElementById('btn-logout').addEventListener('click', logout);
+
+// --- Init ---
+async function initApp() {
+  if (isAuthenticated()) {
+    showApp();
+    await loadCategories();
+    await loadTasks();
+    renderCategories();
+    renderTasks();
+  } else {
+    showAuthSection();
+  }
 }
 
-init();
+initApp();

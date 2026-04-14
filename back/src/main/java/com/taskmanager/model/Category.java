@@ -15,14 +15,19 @@ public class Category {
     @Column(nullable = false)
     private String nombre;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User usuario;
+
     @OneToMany(mappedBy = "categoria", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Task> tareas = new ArrayList<>();
 
     public Category() {
     }
 
-    public Category(String nombre) {
+    public Category(String nombre, User usuario) {
         this.nombre = nombre;
+        this.usuario = usuario;
     }
 
     public Long getId() {
@@ -39,6 +44,14 @@ public class Category {
 
     public void setNombre(String nombre) {
         this.nombre = nombre;
+    }
+
+    public User getUsuario() {
+        return usuario;
+    }
+
+    public void setUsuario(User usuario) {
+        this.usuario = usuario;
     }
 
     public List<Task> getTareas() {
